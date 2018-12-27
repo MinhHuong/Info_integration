@@ -6,6 +6,13 @@
 - Minh Huong LE NGUYEN
 - Nafaa SI SAID
 
+## TODO
+
+- Review the degree calculation (in `extract_properties.py`)
+- Get properties that are likely to be functional
+- Inject erroneous sameAs statements in 001/refalign.rdf
+- Evaluate the implemented method on 001/refalign.rdf (with false sameAs statements)
+
 ## Pipeline
 
 ### 1 - Extraction of (likely) functional properties
