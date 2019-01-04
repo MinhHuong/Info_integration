@@ -1,141 +1,40 @@
+# a real pipeline
+import sys as sys
+import validator as val
+from onto_graph import OntoGraph
+import injector as inj
 
-import rdflib as rdf
-import pprint as pp
+path_data = "../data/"
 
+# N.B.: the injection is done separately
+# the main pipeline does not concern with manual injection of erroneous links
 
-class PropertyExtraction():
-    """
-    This class is served as an utility to:
-    (1) compute the degree of functionality of a property from an RDF graph, and
-    (2) extract properties that are likely to be functional
-    """
+# prompt for custom parameters, if not provided, take default values
+# syntax: 'python pipeline.py <source_graph> <target_graph> <to_validate> <threshold>'
+if len(sys.argv) < 5:
+    print("Default values will be used.")
+    source_path = path_data + "000/onto.owl"
+    target_path = path_data + "001/onto.owl"
+    val_path = path_data + "001/err_refalign.rdf"
+    threshold = 0.8
+else:
+    # otherwise, parse from the command line
+    print("Extracting custom parameters...")
+    source_path = sys.argv[1]
+    target_path = sys.argv[2]
+    val_path = sys.argv[3]
+    threshold = float(sys.argv[4])
 
-    def __init__(self, filename, verbose=0, threshold = 0.8):
-        """
-        Initialize stuffs
-        :param filename: filename to the input RDF graph
-        :param verbos: verbosity (?)
-        :param threshold: the threshold to decide if a property is functional
-        """
-        self.g = rdf.Graph().parse(source= filename , format='xml')
-        self.candidates = None
-        self.verbose = verbose
-        self.threshold = threshold
-        self.functional_properties = None
+# the source graph (must always be 000/onto.owl)
+g_source = OntoGraph(path_data + source_path)
+g_source.extract_func_properties(threshold=threshold)
 
-    def build(self):
-        """
-        Build stuffs # TODO better documentation here...
+# the target graph (anything of 00i/onto.owl where i != 0)
+g_target = OntoGraph(path_data + target_path)
+g_target.extract_func_properties(threshold=threshold)
 
-        :return: a set of functional properties
-        """
-        if self.verbose == 2:
-            print('building...!')
+# the set of sameAs links to validate
+to_validate = inj.extract_sameas(path_data + val_path)
 
-        self.candidates = {}
-        self.functional_properties = set()
-
-        for s in self.g.subjects():
-            
-            # (2.1) count the number of occurrences of each predicate p of s
-            predicates_occurrences = self.count_predicate_occurrences(self.g.predicate_objects(s))
-            if self.verbose == 1:
-                print(self.candidates)
-                break
-
-            # (2.2) for those predicates that appear only ONCE, update the functionality count
-            self.update_candidates(predicates_occurrences)
-
-        # (3) having the count of each predicate i.e. the number of times it associates one input to only one output
-        # compute the degree of functionality (a percentage?)
-        self.filter_functional_properties()
-
-        if self.verbose == 2:
-            print('functional_properties: ', self.functional_properties)
-
-        # return the set of functional properties
-        return self.functional_properties
-
-
-    def count_predicate_occurrences(self,predicates_objects):
-        """
-        Count the number of times a predicate p is associated to a given subject s e.g.
-        ex:a    rdf:type    ex:Person
-        ex:a    ex:work_at  ex:School
-        ex:a    ex:work_at  ex:Office
-        ex:a    ex:work_at  ex:France
-        Then the count should be: { "rdf:type" : 1, "ex:work_at": 3 }
-        Besides from counting the number of occurrences of predicates,
-        we should also update the total number of time it has appeared until now
-        i.e. to update the total count in candidates
-
-        :param predicates_objects: the list of tuples (predicate, object) associated to a subject
-        :return: a dictionary where k = predicate and v = its number of occurrences
-        """
-
-        # dictionary where k = predicate and v = the number of times p occurs (with a given subject)
-        occurrences = {}
-        for p_o in predicates_objects:
-            p = p_o[0]
-
-            # count the occurrences of a predicate p
-            if p not in occurrences:
-                occurrences[p] = 1
-            else:
-                occurrences[p] += 1
-
-            # update the total count of p
-            if p not in self.candidates:
-                # if p not yet added to candidates,
-                # initialize its total count to 1 and its functionality count to 0
-                self.candidates[p] = [0, 1]
-            else:
-                # else, just increment its total count
-                self.candidates[p][1] += 1
-
-        return occurrences
-
-
-    def update_candidates(self, occurrences):
-        """
-        Update the count of each candidate predicate.
-        :param candidates: the dictionary candidates
-        :param occurrences: the occurrences dictionary, where k = predicate p and v = number of occurrences of p
-        :return: None
-        """
-
-        # if a predicate appears only ONCE i.e. its number of occurrences = 1
-        # update it in the dictionary of candidates by incrementing its count (1st element) by 1
-        for p, count in occurrences.items():
-            if count == 1:
-                self.candidates[p][0] += 1 # update the functionality count
-
-
-    def filter_functional_properties(self):
-        """
-        Filter out properties that are unlikely to be functional,
-        by dividing functionality count by the total count of a predicate p.
-        We then compare the obtained ratio with the threshold,
-        if the ratio is >= the threshold, then p is possibly a functional property
-        :param candidates: the candidates dictionary
-        :param threshold: the functionality threshold
-        :return:
-        """
-        for p, counts in self.candidates.items():
-            deg = counts[0]/counts[1]
-            if deg >= self.threshold:
-                self.functional_properties.add(p)
-    
-if __name__ == '__main__':
-
-    
-    path_data_000 = '../data/000/onto.owl'
-    path_data_001 = '../data/001/onto.owl'
-
-    func000 = PropertyExtraction(filename=path_data_000, verbose=0, threshold=0.8)
-    func000.build()
-    print(len(func000.functional_properties))
-
-    func001 = PropertyExtraction(filename=path_data_001, verbose=0, threshold=1.0)
-    func001.build()
-    print(len(func001.functional_properties))
+# validate sameAs statements
+val.detect_false_sameas(to_validate, g_source, g_target)
