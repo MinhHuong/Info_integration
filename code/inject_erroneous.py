@@ -4,6 +4,7 @@ from pipeline import PropertyExtraction
 from xml.dom import minidom
 import random
 import io
+import rdflib as rdf
 
 def inject(input_path,output_path,source,target): #source and target are 2 lists
 	"""
@@ -75,9 +76,9 @@ def correct_sameAs(path_refalign):
 		value = entity2_onto_target[i].attributes['rdf:resource'].value
 		if key not in sameAs:
 			sameAs[key] = value
-		else:
-			raise ValueError('%s entity of source Ontology already\
-			 SameAs %s entity of target Ontology! ' %(key,value))
+		#else:
+			#raise ValueError('%s entity of source Ontology already\
+			 #SameAs %s entity of target Ontology! ' %(key,value))
 
 	return sameAs
 
@@ -120,35 +121,87 @@ def random_subject(graph,dict_sameAs={},check_refalign=True,verbose=0):
 	return random_subject
 
 
+def detect_false_sameAs(sameAs, PE1, PE2):
+	"""
+	Given some sameAs links, checks if U1 sameAs U2 and p is a common property of U1 and U2
+	if p(U1, x) AND p(U2, y) and if x == y then the sameAs property is valid
+	valid sameAs properties are added to a new dictionnary true_sameAs
+	"""
+	true_sameAs = {}
+	for U1, U2 in sameAs.items():
+		common_props = get_common_prop(U1, U2, PE1.g, PE2.g)#All the common properties between U1 and U2
+		
+		FPcount = 0 #count the number of functional properties
+		SameFPcount = 0 #count the number of functional properties with x == y
+		for p in common_props:
+			if p in PE1.functional_properties and p in PE2.functional_properties: #functional properties filtering
+				FPcount = FPcount +1 #we found a functional property
+				objs1 = list(PE1.g.objects(rdf.URIRef(U1), p))
+				objs2 = list(PE2.g.objects(rdf.URIRef(U2), p))
+				if len(objs1) == 1 and len(objs2) == 1 and objs1[0] == objs2[0]:
+					SameFPcount = SameFPcount +1 #we found a functional property validating x == y
+				#print(SameFPcount, FPcount)
+		#print(SameFPcount, FPcount)
+		if( FPcount > 0 and SameFPcount / FPcount >=  0.5):
+			if U1 not in true_sameAs:
+				true_sameAs[U1] = U2	
+	print("True same as ratio : ", len(true_sameAs)/len(sameAs))
+
+
+
+	return true_sameAs
+
+def get_common_prop(U1, U2, G1, G2):
+	"""
+	This function gets the common properties between 2 URIs subjects in 2 different ontologies
+	return the rdf property
+	"""
+	pred_obj1 = set([p for p,o in list(G1.predicate_objects(rdf.URIRef(U1)))])
+	pred_obj2 = set([p for p,o in list(G2.predicate_objects(rdf.URIRef(U2)))])
+	return pred_obj1.intersection(pred_obj2)
+	
+
+
 if __name__ == '__main__':
 
 	no_erroneous = 400 # number of erroneous sameAs statements to be injected
-	verbose = 0 # verbosity
+	#verbose = 0 # verbosity
 
 	# filenames
 	path_data_ref_001 = '../data/001/refalign.rdf'
 	path_data_ref_002 = '../data/002/refalign.rdf'
+	path_data_ref_err = '../data/001/refalign_err_injected.rdf'
 	path_data_owl_000 = '../data/000/onto.owl'
 	path_data_owl_001 = '../data/001/onto.owl'
 	path_data_owl_002 = '../data/002/onto.owl'
 
+	
+
+	
+
+	func000 = PropertyExtraction(filename=path_data_owl_000, threshold = 0.6)#graph
+	func001 = PropertyExtraction(filename=path_data_owl_001, threshold = 0.6)#graph
+	func002 = PropertyExtraction(filename=path_data_owl_002, threshold = 0.6)#graph
+
+	func000.build()
+	func001.build()
+	func002.build()
+
 	sameAs_001 = correct_sameAs(path_data_ref_001) #Dict
 	sameAs_002 = correct_sameAs(path_data_ref_002) #Dict
+	sameAs_err = correct_sameAs(path_data_ref_err)
 
-	func000 = PropertyExtraction(filename=path_data_owl_000)#graph
-	func001 = PropertyExtraction(filename=path_data_owl_001)#graph
-
+	detect_false_sameAs(sameAs_err, func000, func001)
 	# get the random URI's subject
-	random_source_001 = random_subject(func000.g,sameAs_001, check_refalign = True)
-	random_target_001 = random_subject(func001.g, check_refalign = False)
+	#random_source_001 = random_subject(func000.g,sameAs_001, check_refalign = True)
+	#random_target_001 = random_subject(func001.g, check_refalign = False)
 
-	random_source_002 = random_subject(func000.g,sameAs_002, check_refalign = True)
-	random_target_002 = random_subject(func001.g, check_refalign = False)
+	#random_source_002 = random_subject(func000.g,sameAs_002, check_refalign = True)
+	#random_target_002 = random_subject(func001.g, check_refalign = False)
 
 	# inject erroneous subjects in input graphs
-	inject(path_data_ref_001,'../data/001/refalign_err_injected',random_source_001,random_target_001)
-	inject(path_data_ref_002,'../data/002/refalign_err_injected',random_source_002,random_target_002)
-
+	#inject(path_data_ref_001,'../data/001/refalign_err_injected',random_source_001,random_target_001)
+	#inject(path_data_ref_002,'../data/002/refalign_err_injected',random_source_002,random_target_002)
 
 
 

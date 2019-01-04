@@ -1,3 +1,4 @@
+
 import rdflib as rdf
 import pprint as pp
 
@@ -35,6 +36,7 @@ class PropertyExtraction():
         self.functional_properties = set()
 
         for s in self.g.subjects():
+            
             # (2.1) count the number of occurrences of each predicate p of s
             predicates_occurrences = self.count_predicate_occurrences(self.g.predicate_objects(s))
             if self.verbose == 1:
@@ -123,10 +125,10 @@ class PropertyExtraction():
             deg = counts[0]/counts[1]
             if deg >= self.threshold:
                 self.functional_properties.add(p)
-
-
+    
 if __name__ == '__main__':
 
+    
     path_data_000 = '../data/000/onto.owl'
     path_data_001 = '../data/001/onto.owl'
 
