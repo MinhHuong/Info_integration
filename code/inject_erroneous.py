@@ -147,9 +147,8 @@ def detect_false_sameAs(sameAs, PE1, PE2):
 				true_sameAs[U1] = U2	
 	print("True same as ratio : ", len(true_sameAs)/len(sameAs))
 
-
-
 	return true_sameAs
+
 
 def get_common_prop(U1, U2, G1, G2):
 	"""
@@ -161,7 +160,6 @@ def get_common_prop(U1, U2, G1, G2):
 	return pred_obj1.intersection(pred_obj2)
 	
 
-
 if __name__ == '__main__':
 
 	no_erroneous = 400 # number of erroneous sameAs statements to be injected
@@ -170,14 +168,11 @@ if __name__ == '__main__':
 	# filenames
 	path_data_ref_001 = '../data/001/refalign.rdf'
 	path_data_ref_002 = '../data/002/refalign.rdf'
-	path_data_ref_err = '../data/001/refalign_err_injected.rdf'
+	path_data_ref_err_001 = '../data/001/refalign_err_injected.rdf'
+	path_data_ref_err_002 = '../data/002/refalign_err_injected.rdf'
 	path_data_owl_000 = '../data/000/onto.owl'
 	path_data_owl_001 = '../data/001/onto.owl'
 	path_data_owl_002 = '../data/002/onto.owl'
-
-	
-
-	
 
 	func000 = PropertyExtraction(filename=path_data_owl_000, threshold = 0.6)#graph
 	func001 = PropertyExtraction(filename=path_data_owl_001, threshold = 0.6)#graph
@@ -189,19 +184,18 @@ if __name__ == '__main__':
 
 	sameAs_001 = correct_sameAs(path_data_ref_001) #Dict
 	sameAs_002 = correct_sameAs(path_data_ref_002) #Dict
-	sameAs_err = correct_sameAs(path_data_ref_err)
+	sameAs_err_001 = correct_sameAs(path_data_ref_err_001)
+	sameAs_err_002 = correct_sameAs(path_data_ref_err_002)
 
-	detect_false_sameAs(sameAs_err, func000, func001)
+	detect_false_sameAs(sameAs_002, func000, func002)
+
 	# get the random URI's subject
-	#random_source_001 = random_subject(func000.g,sameAs_001, check_refalign = True)
-	#random_target_001 = random_subject(func001.g, check_refalign = False)
-
-	#random_source_002 = random_subject(func000.g,sameAs_002, check_refalign = True)
-	#random_target_002 = random_subject(func001.g, check_refalign = False)
-
-	# inject erroneous subjects in input graphs
-	#inject(path_data_ref_001,'../data/001/refalign_err_injected',random_source_001,random_target_001)
-	#inject(path_data_ref_002,'../data/002/refalign_err_injected',random_source_002,random_target_002)
-
-
-
+	# random_source_001 = random_subject(func000.g,sameAs_001, check_refalign = True)
+	# random_target_001 = random_subject(func001.g, check_refalign = False)
+	#
+	# random_source_002 = random_subject(func000.g,sameAs_002, check_refalign = True)
+	# random_target_002 = random_subject(func001.g, check_refalign = False)
+	#
+	# # inject erroneous subjects in input graphs
+	# inject(path_data_ref_001,'../data/001/refalign_err_injected',random_source_001,random_target_001)
+	# inject(path_data_ref_002,'../data/002/refalign_err_injected',random_source_002,random_target_002)
