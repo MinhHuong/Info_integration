@@ -8,42 +8,30 @@
 
 ## TODO
 
-- Review the degree calculation (in `extract_properties.py`)
-- Get properties that are likely to be functional
-- Inject erroneous sameAs statements in 001/refalign.rdf
-- Evaluate the implemented method on 001/refalign.rdf (with false sameAs statements)
+- Review the refactored code of each module, namely `validator`, `injector`, `extractor`
+- Improve the performance of the validator
 
 ## Pipeline
+Syntax to call the validator:
 
-### 1 - Extraction of (likely) functional properties
-For the first task, we need to extract the (most likely) funtional properties from a given RDF graph, by computing the **degree of functionality** of each predicate.
+`python pipeline source_graph target_graph val_graph threshold`
 
-Let `G` be the RDF graph. The **degree of functionality** is computed as follows:
- 
-**(1)** For each subject `s` in `G`, we look at every predicate/property `p` associated to `s` and count the number of times `p` is associated to `s`.
+where `source_graph` should always be the reference ontology 000/onto.owl, 
+`target_graph` is 00i/onto.owl where i != 0, 
+`val_graph` is the refalign with **erroneous sameAs links injected in**, 
+and `threshold` is the threshold over which a property can be considered functional.
 
-For example, given those triples of a subject `ex:person`:
+If the parameters are not provided, the default values are assigned to each parameter.
 
-``	ex:person	rdf:type 	ex:Teacher``
-``	ex:person	rdf:work_at	ex:School``
-``	ex:person	rdf:work_at	ex:Office``
-``	ex:person	rdf:work_at	ex:France``
+The pipeline comprises of main steps:
+1. Extracting the functional properties from source & target graph (`extractor` module)
+2. Validating the sameAs links given in `val_graph`
 
-The resulting count should be a dictionary : `{ "rdf:type": 1, "rdf:work_at": 3 }`
+**N.B.:** The injection of erroneous sameAs links (`injector` module) is done separately, 
+out of the pipeline scope. To inject wrong sameAs links before invoking the pipeline, 
+one should call:
 
-**(2)** We then count the number of times a predicate `p`, given an input `s`, only gives **one output** `o` . We call this type of counts the **functionality count** i.e. the number of times `p` behaves like a functional property.
+`python injector.py source_path target_path refalign_path output_path num_error`
 
-At the end of this counting step, we should have a dictionary named `candidates` where the key is a predicate `p` and the value is a 2-element list where:
-
-- the first element is the **functionality count** i.e. the number of times `p` only gives one output `o` for a given input `s`
-- the second element is the **total count** i.e. the number of times `p` appears in the entire graph `G`
-
-The degree of functionality of a predicate `p`p equals to the ratio of  (**functionality count of p / total count of p**). If this ratio is greate or equal to a threshold (defined by us), we say that `p` is functional, and vice-versa.
-
-The goal of this step is to extract functional properties from `G`; that is, properties having the degree of functionality >= a threshold.
-
-A skeleton of code has been implemented in `extract_properties.py`.
-
-### 2 - Invalidate sameAs links
-
-(not yet any idea because I'm craving for a holiday)
+For example: `python code/injector.py data/000/onto/owl 
+data/001/onto.owl data/001/refalign.rdf data/001/err_refalign.rdf 400`  

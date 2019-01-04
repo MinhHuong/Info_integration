@@ -1,5 +1,6 @@
 from xml.dom import minidom
 import random
+import sys as sys
 from onto_graph import OntoGraph
 
 
@@ -151,18 +152,31 @@ def random_uri(graph, no_erroneous, dict_sameas=None, check_refalign=True, verbo
 # For testing purpose only #
 ############################
 if __name__ == '__main__':
-    print('Testing the injector...')
+    print('Running the injector...')
 
     # what we want: inject a number of erroneous sameAs links to a refalign file
     # by using URI's from that refalign's folder AND the source ontology
 
-    # create the graphs, no need to extract functional properties (it's only a test)
-    g_source = OntoGraph('../data/000/onto.owl')
-    g_target = OntoGraph('../data/001/onto.owl')
+    # extract arguments from the command line
+    if len(sys.argv) < 6:
+        print("Syntax: python injector.py source_graph target_graph refalign_path output_path num_error")
+        sys.exit(0)
+
+    source_path = sys.argv[1]
+    target_path = sys.argv[2]
+    refalign_path = sys.argv[3]
+    output_path = sys.argv[4]
+    num_error = int(sys.argv[5])
+
+    # create the graphs, no need to extract functional properties
+    g_source = OntoGraph(source_path)
+    g_target = OntoGraph(target_path)
 
     # inject wrong sameAs
     create_wrong_sameas(target_graph=g_target,
                         source_graph=g_source,
-                        output_path='../data/001/err_refalign.rdf',
-                        target_refalign_path='../data/001/refalign.rdf',
-                        no_error=400)
+                        output_path=output_path,
+                        target_refalign_path=refalign_path,
+                        no_error=num_error)
+
+    print("The result is found in", output_path)
