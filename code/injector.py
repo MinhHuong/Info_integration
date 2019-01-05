@@ -4,7 +4,7 @@ import sys as sys
 from onto_graph import OntoGraph
 
 
-def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign_path, no_error):
+def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign_path, ratio):
     """
     The main method that wraps all the procedures of wrong sameAs statements injection
 
@@ -12,38 +12,39 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
     :param source_graph:  the reference ontology in 000/
     :param output_path:             where to save the graph with erroneous sameAs links injected
     :param target_refalign_path:    the gold standard refalign.rdf in the same folder as target_path
-    :param no_error:                number of erroneous links # TODO extend to a ratio
+    :param ratio:                   Ratio of erroneous sameAs links injected (as an integer eg. 40 --> 40%)
     :return:                        None
     """
     # extract same-as statements from gold standard in refalign
     same_as = extract_sameas(target_refalign_path)
 
+    # compute the no_errors from percentage(ratio)
+    no_error = int((len(same_as) * ratio)/100)
+
     # get random URIs
-    random_source = random_uri(graph=source_graph.graph, no_erroneous=no_error,
-                               dict_sameas=same_as, check_refalign=True)
-    random_target = random_uri(graph=target_graph.graph, no_erroneous=no_error,
-                               dict_sameas=same_as, check_refalign=False)
+    random_dict_uri = random_uri(graph_source=source_graph.graph,
+                                 graph_target=target_graph.graph,
+                                 no_erroneous=no_error,
+                                 dict_sameas=same_as)
 
     # inject erroneous in target_graph
-    inject(target_refalign_path, output_path, random_source, random_target)
+    inject(target_refalign_path, output_path, random_dict_uri)
 
 
-def inject(input_path, output_path, source, target):
+def inject(input_path, output_path, random_dict_uri):
     """
     Inject erroneous sameAs statements.
     We use minidom to parse refalign and to inject erroneous sameAs links.
     The erroneous sameAs links will be saved in output_path
 
-    :param input_path:  path to refalign
-    :param output_path: path to save refalign with injected errors
-    :param source:      a list containing random subjects from source ontology (000)
-    :param target:      a list containing random subjects from target ontology (001/ 002)
-    :return:            None
+    :param input_path:      path to refalign
+    :param output_path:     path to save refalign with injected errors
+    :param random_dict_uri: TODO add information
+    :return:                None
     """
 
-    assert (len(source) == len(target))
-    size = len(source)
-    doc = minidom.parse(input_path)  # open existing file for parsing
+    size = len(random_dict_uri)
+    doc = minidom.parse(input_path) # open existing file for parsing
 
     alignment = doc.getElementsByTagName('Alignment')[0]
     for i in range(size):
@@ -53,11 +54,11 @@ def inject(input_path, output_path, source, target):
         data.appendChild(cell)
 
         cons = doc.createElement('entity1')
-        cons.setAttribute('rdf:resource', source[i])
+        cons.setAttribute('rdf:resource', list(random_dict_uri.keys())[i]) # random choice from source onto
         cell.appendChild(cons)
 
         cons = doc.createElement('entity2')
-        cons.setAttribute('rdf:resource', target[i])
+        cons.setAttribute('rdf:resource', list(random_dict_uri.values())[i]) # random choice from target onto
         cell.appendChild(cons)
 
         relation = doc.createElement('relation')
@@ -98,54 +99,51 @@ def extract_sameas(path_refalign):
         value = entity2_onto_target[i].attributes['rdf:resource'].value
         if key not in same_as:
             same_as[key] = value
-        # else:
-        #     raise ValueError(
-        #         '%s entity of source Ontology already in SameAs %s entity of target Ontology!'
-        #         % (key, value))
 
     return same_as
 
 
-def random_uri(graph, no_erroneous, dict_sameas=None, check_refalign=True, verbose=0):
-    """
-    Select random URI subject from a given graph
-    TODO Include URIs from the objects also
-
-    :param graph:           the ontology graph
-    :param no_erroneous:    number of random URIs to extract from the graph
-                            TODO maybe fix a ratio instead of a constant
-    :param dict_sameas:     TODO add information
-    :param check_refalign:  TODO add information
-    :param verbose:         level of verbosity
-    :return:                a list of randomly selected subjects from an ontology
-                            (that we get as 'input')
+def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
     """
 
-    random_subject = []
+    :param graph_source:    the ontology graph_source
+    :param graph_target:    the ontology graph_target
+    :param no_erroneous:    number of random URIs to extract from the graphs
+    :param dict_sameas:     Dictionary of correct sameAs links from refalign
+    :return:                A dictionary containing random "uri"s from source onto as key
+                            and random "uri"s from target onto --> to be injected in refalign
+    """
+
+    random_dict_uri = {}
 
     '''
-    graph.subjects() : subjects in an rdf triple - type: <class 'generator'>
-    We want to select 400 (no_erroneous) random subjects not existing as a key of 
-    sameAs dictionary
-    In order not to save all subjects in a list and then randomly select from them, 
-    we use sorted()
+    graph.subject_objects() : "uri"s in an rdf triple (subjects and objects) - type: <class 'generator'>
+    We want to select (no_erroneous) random source uri not existing as a key of 
+    sameAs dictionary and (no_erroneous) target uri not existing as value of sameAs dict
     '''
 
-    for subject in sorted(graph.subjects(), key=lambda k: random.random()):
-        if verbose == 1:
-            print(str(subject))
-            break
+    for uri_source, uri_target in zip(sorted(graph_source.subject_objects(), key=lambda k: random.random()),
+                                      sorted(graph_target.subject_objects(), key=lambda k: random.random())):
+        # Only take those "uri"s that are of type URIRef. (didn't make sense for string values)
+        if 'URIRef' in str(type(uri_source[1])) and 'URIRef' in str(type(uri_target[1])):
+            if 'URIRef' in str(type(uri_source[0])) and 'URIRef' in str(type(uri_target[0])):
+                rand_uri_source = random.choice([uri_source[0], uri_source[1]])
+                rand_uri_target = random.choice([uri_target[0], uri_target[0]])
+                # Checking that we already do not have this random tuple in gold standard (refalign)
+                if rand_uri_source in dict_sameas: 
+                    if rand_uri_target != dict_sameas[rand_uri_source]:
+                        random_dict_uri[rand_uri_source] = rand_uri_target
+                else:
+                    random_dict_uri[rand_uri_source] = rand_uri_target
 
-        if check_refalign:
-            if subject not in dict_sameas:
-                random_subject.append(str(subject))
-        else:
-            random_subject.append(str(subject))
+                # create no more random tuples than asked for
+                if len(random_dict_uri) == no_erroneous:
+                    break
 
-        if len(random_subject) == no_erroneous:
-            break
-
-    return random_subject
+    if len(random_dict_uri) == no_erroneous:
+        return random_dict_uri
+    else:
+        raise ValueError('Could not create the percentage of erroneous links that were asked !')
 
 
 ############################
@@ -166,7 +164,7 @@ if __name__ == '__main__':
     target_path = sys.argv[2]
     refalign_path = sys.argv[3]
     output_path = sys.argv[4]
-    num_error = int(sys.argv[5])
+    ratio = float(sys.argv[5])
 
     # create the graphs, no need to extract functional properties
     g_source = OntoGraph(source_path)
@@ -177,6 +175,6 @@ if __name__ == '__main__':
                         source_graph=g_source,
                         output_path=output_path,
                         target_refalign_path=refalign_path,
-                        no_error=num_error)
+                        ratio=ratio)
 
     print("The result is found in", output_path)
