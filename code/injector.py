@@ -12,7 +12,7 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
     :param source_graph:  the reference ontology in 000/
     :param output_path:             where to save the graph with erroneous sameAs links injected
     :param target_refalign_path:    the gold standard refalign.rdf in the same folder as target_path
-    :param ratio:                   Ratio of erroneous sameAs links injected (as an integer eg. 40 --> 40%)
+    :param ratio:                   Ratio of erroneous sameAs links injected (as a float e.g 0.4 --> 40%)
     :return:                        None
     """
     # extract same-as statements from gold standard in refalign
@@ -20,7 +20,8 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
 
 
     # compute the no_errors from percentage(ratio)
-    no_error = int((len(same_as) * ratio)/100)  
+    no_error = int(len(same_as) * ratio)
+
     # get random URIs
     random_dict_uri = random_uri(graph_source=source_graph.graph,graph_target=target_graph.graph,\
      no_erroneous=no_error, dict_sameas=same_as)
@@ -143,6 +144,7 @@ def random_uri(graph_source,graph_target, no_erroneous, dict_sameas):
     else:
         raise ValueError('Could not create the percentage of erroneous links that were asked !')
 
+
 def count_links(path_refalign):
     """
     This method counts the number of sameAs links in refalign
@@ -153,7 +155,6 @@ def count_links(path_refalign):
     xmldoc = minidom.parse(path_refalign)        
 
     return len(xmldoc.getElementsByTagName('entity1'))
-
 
 
 ############################
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     target_path = sys.argv[2]
     refalign_path = sys.argv[3]
     output_path = sys.argv[4]
-    ratio = int(sys.argv[5])
+    ratio = float(sys.argv[5])
 
     # create the graphs, no need to extract functional properties
     g_source = OntoGraph(source_path)
@@ -188,5 +189,7 @@ if __name__ == '__main__':
                         ratio=ratio)
 
     print("The result is found in", output_path)
-    print('number of links in output : ',count_links(output_path))
+    print("Expected erroneous links to be added:", count_links(refalign_path) * ratio)
+    print("Number of links before injection:", count_links(refalign_path))
+    print("Number of links after injection", count_links(output_path))
 

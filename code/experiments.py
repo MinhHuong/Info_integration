@@ -15,7 +15,7 @@ Run experiments through all steps
     
 Required parameters:
     - threshold:    to compute the degree functionality of a property
-    - ratio:        fraction of manually added erroneous sameAs
+    - ratio:        fraction of manually added erroneous sameAs (as an integer)
     - do_injection: to include wrong sameAs injection to the experiments
                     (False if we've already done it, to prevent redundant work & loss of time)
 """
@@ -66,13 +66,16 @@ for i in range(1, num_input+1):
     # the set of sameAs links to validate
     val_path = path_data + folder + "err_refalign.rdf"
     to_validate = inj.extract_sameas(path_data + val_path)
+    V = inj.count_links(val_path)
 
     # we also want to keep track of the number of wrong sameAs being added in
     gold_path = path_data + folder + "refalign.rdf"
-    gold_standard = inj.extract_sameas(path_data + gold_path)
-    G = len(gold_standard)
-    assert G / len(to_validate) == 1 / (1 + ratio)
+    G = inj.count_links(path_data + gold_path)
+    print("Golden standard:", G)
+    print("To validate:", V)
+    print("Ratio:", ratio)
+    assert int(G / V) == int(1 / (1 + ratio))
 
     # validate sameAs statements
     num_true, num_false = val.detect_false_sameas(to_validate, g_source, g_target)
-    print("%d wrong sameAs links detected over %d erroneous links" % (num_false, num_false / W))
+    print("%d wrong sameAs links detected over %d erroneous links" % (num_false, V-G))
