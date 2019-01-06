@@ -19,7 +19,8 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
     same_as = extract_sameas(target_refalign_path)
 
     # compute the no_errors from percentage(ratio)
-    no_error = int((len(same_as) * ratio)/100)
+    no_error = int((len(same_as) * ratio))
+    print("Number of erroneous links to be added:", no_error)
 
     # get random URIs
     random_dict_uri = random_uri(graph_source=source_graph.graph,
@@ -177,4 +178,6 @@ if __name__ == '__main__':
                         target_refalign_path=refalign_path,
                         ratio=ratio)
 
+    print("Number of sameAs before injection:", len(extract_sameas(refalign_path)))
+    print("Number of sameAs after injection:", len(extract_sameas(output_path)))
     print("The result is found in", output_path)

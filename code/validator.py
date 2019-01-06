@@ -11,6 +11,9 @@ def detect_false_sameas(same_as, g1, g2):
     valid sameAs properties are added to a new dictionnary true_sameAs
     """
     true_sameAs = {}
+    wrong_sameas_count = 0
+
+    # for each sameAs statements
     for U1, U2 in same_as.items():
         common_props = get_common_prop(U1, U2, g1.graph, g2.graph)  # All the common properties between U1 and U2
 
@@ -23,14 +26,18 @@ def detect_false_sameas(same_as, g1, g2):
                 objs2 = list(g2.graph.objects(rdf.URIRef(U2), p))
                 if len(objs1) == 1 and len(objs2) == 1 and objs1[0] == objs2[0]:
                     SameFPcount = SameFPcount + 1  # we found a functional property validating x == y
-            # print(SameFPcount, FPcount)
-        # print(SameFPcount, FPcount)
-        if FPcount > 0 and SameFPcount / FPcount >= 0.5:
-            if U1 not in true_sameAs:
-                true_sameAs[U1] = U2
-    print("True same as ratio : ", len(true_sameAs) / len(same_as))
 
-    return true_sameAs
+        # retrieve the true sameAs
+        if FPcount > 0:
+            if SameFPcount / FPcount >= 0.5:
+                if U1 not in true_sameAs:
+                    true_sameAs[U1] = U2
+            else:
+                wrong_sameas_count += 1  # also want to have the number of wrong sameAs detected
+
+    # print("True same as ratio : ", len(true_sameAs) / len(same_as))
+
+    return (len(true_sameAs), wrong_sameas_count)
 
 
 def get_common_prop(U1, U2, G1, G2):

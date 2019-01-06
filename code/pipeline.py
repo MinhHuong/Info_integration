@@ -25,6 +25,8 @@ else:
     val_path = sys.argv[3]
     threshold = float(sys.argv[4])
 
+print("Extracting functional propreties...")
+
 # the source graph (must always be 000/onto.owl)
 g_source = OntoGraph(path_data + source_path)
 g_source.extract_func_properties(threshold=threshold)
@@ -37,4 +39,5 @@ g_target.extract_func_properties(threshold=threshold)
 to_validate = inj.extract_sameas(path_data + val_path)
 
 # validate sameAs statements
+print("Detecting false sameAs statements...")
 val.detect_false_sameas(to_validate, g_source, g_target)
