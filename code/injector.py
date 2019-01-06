@@ -18,15 +18,12 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
     # extract same-as statements from gold standard in refalign
     same_as = extract_sameas(target_refalign_path)
 
-    # compute the no_errors from percentage(ratio)
-    no_error = int((len(same_as) * ratio))
-    print("Number of erroneous links to be added:", no_error)
 
+    # compute the no_errors from percentage(ratio)
+    no_error = int((len(same_as) * ratio)/100)  
     # get random URIs
-    random_dict_uri = random_uri(graph_source=source_graph.graph,
-                                 graph_target=target_graph.graph,
-                                 no_erroneous=no_error,
-                                 dict_sameas=same_as)
+    random_dict_uri = random_uri(graph_source=source_graph.graph,graph_target=target_graph.graph,\
+     no_erroneous=no_error, dict_sameas=same_as)
 
     # inject erroneous in target_graph
     inject(target_refalign_path, output_path, random_dict_uri)
@@ -38,14 +35,15 @@ def inject(input_path, output_path, random_dict_uri):
     We use minidom to parse refalign and to inject erroneous sameAs links.
     The erroneous sameAs links will be saved in output_path
 
-    :param input_path:      path to refalign
-    :param output_path:     path to save refalign with injected errors
-    :param random_dict_uri: TODO add information
-    :return:                None
+    :param input_path:  path to refalign
+    :param output_path: path to save refalign with injected errors
+    :param source:      a list containing random subjects from source ontology (000)
+    :param target:      a list containing random subjects from target ontology (001/ 002)
+    :return:            None
     """
 
     size = len(random_dict_uri)
-    doc = minidom.parse(input_path) # open existing file for parsing
+    doc = minidom.parse(input_path)  # open existing file for parsing
 
     alignment = doc.getElementsByTagName('Alignment')[0]
     for i in range(size):
@@ -59,7 +57,7 @@ def inject(input_path, output_path, random_dict_uri):
         cell.appendChild(cons)
 
         cons = doc.createElement('entity2')
-        cons.setAttribute('rdf:resource', list(random_dict_uri.values())[i]) # random choice from target onto
+        cons.setAttribute('rdf:resource', list(random_dict_uri.values())[i]) #random choice from target onto
         cell.appendChild(cons)
 
         relation = doc.createElement('relation')
@@ -104,7 +102,7 @@ def extract_sameas(path_refalign):
     return same_as
 
 
-def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
+def random_uri(graph_source,graph_target, no_erroneous, dict_sameas):
     """
 
     :param graph_source:    the ontology graph_source
@@ -123,8 +121,8 @@ def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
     sameAs dictionary and (no_erroneous) target uri not existing as value of sameAs dict
     '''
 
-    for uri_source, uri_target in zip(sorted(graph_source.subject_objects(), key=lambda k: random.random()),
-                                      sorted(graph_target.subject_objects(), key=lambda k: random.random())):
+    for uri_source , uri_target in zip(sorted(graph_source.subject_objects(), key=lambda k: random.random()) ,
+        sorted(graph_target.subject_objects(), key=lambda k: random.random())):
         # Only take those "uri"s that are of type URIRef. (didn't make sense for string values)
         if 'URIRef' in str(type(uri_source[1])) and 'URIRef' in str(type(uri_target[1])):
             if 'URIRef' in str(type(uri_source[0])) and 'URIRef' in str(type(uri_target[0])):
@@ -140,11 +138,22 @@ def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
                 # create no more random tuples than asked for
                 if len(random_dict_uri) == no_erroneous:
                     break
-
     if len(random_dict_uri) == no_erroneous:
         return random_dict_uri
     else:
         raise ValueError('Could not create the percentage of erroneous links that were asked !')
+
+def count_links(path_refalign):
+    """
+    This method counts the number of sameAs links in refalign
+
+    :param path_refalign:   path to the refalign '../data/001/refalign_err.rdf'
+    :return:                Number of links
+    """
+    xmldoc = minidom.parse(path_refalign)        
+
+    return len(xmldoc.getElementsByTagName('entity1'))
+
 
 
 ############################
@@ -165,7 +174,7 @@ if __name__ == '__main__':
     target_path = sys.argv[2]
     refalign_path = sys.argv[3]
     output_path = sys.argv[4]
-    ratio = float(sys.argv[5])
+    ratio = int(sys.argv[5])
 
     # create the graphs, no need to extract functional properties
     g_source = OntoGraph(source_path)
@@ -178,6 +187,6 @@ if __name__ == '__main__':
                         target_refalign_path=refalign_path,
                         ratio=ratio)
 
-    print("Number of sameAs before injection:", len(extract_sameas(refalign_path)))
-    print("Number of sameAs after injection:", len(extract_sameas(output_path)))
     print("The result is found in", output_path)
+    print('number of links in output : ',count_links(output_path))
+
