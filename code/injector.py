@@ -27,7 +27,9 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
                                  dict_sameas=same_as)
 
     # inject erroneous in target_graph
-    inject(target_refalign_path, output_path, random_dict_uri)
+    error_links = inject(target_refalign_path, output_path, random_dict_uri)
+
+    return error_links
 
 
 def inject(input_path, output_path, random_dict_uri):
@@ -40,25 +42,30 @@ def inject(input_path, output_path, random_dict_uri):
     :param output_path: path to save refalign with injected errors
     :param source:      a list containing random subjects from source ontology (000)
     :param target:      a list containing random subjects from target ontology (001/ 002)
-    :return:            None
+    :return:            a set of erroneous sameAs links (as tuple)
     """
 
     size = len(random_dict_uri)
     doc = minidom.parse(input_path)  # open existing file for parsing
+    error_links = set()
 
     alignment = doc.getElementsByTagName('Alignment')[0]
     for i in range(size):
+        # random URIs to inject
+        entity1 = list(random_dict_uri.keys())[i]
+        entity2 = list(random_dict_uri.values())[i]
+
         data = doc.createElement('map')
         alignment.appendChild(data)
         cell = doc.createElement('Cell')
         data.appendChild(cell)
 
         cons = doc.createElement('entity1')
-        cons.setAttribute('rdf:resource', list(random_dict_uri.keys())[i]) # random choice from source onto
+        cons.setAttribute('rdf:resource', entity1) # random choice from source onto
         cell.appendChild(cons)
 
         cons = doc.createElement('entity2')
-        cons.setAttribute('rdf:resource', list(random_dict_uri.values())[i]) #random choice from target onto
+        cons.setAttribute('rdf:resource', entity2) #random choice from target onto
         cell.appendChild(cons)
 
         relation = doc.createElement('relation')
@@ -72,6 +79,9 @@ def inject(input_path, output_path, random_dict_uri):
         measure.appendChild(text)
         cell.appendChild(measure)
 
+        # add the newly generated error link in
+        error_links.add((entity1, entity2))
+
     # doc.writexml(open(name+'.xml','w'))
     doc = doc.toprettyxml()
 
@@ -79,6 +89,8 @@ def inject(input_path, output_path, random_dict_uri):
     text_file = open(output_path, 'w')
     text_file.write(doc)
     text_file.close()
+
+    return error_links
 
 
 def sameas_dict_refalign(path_refalign):
@@ -161,10 +173,13 @@ def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
                 # create no more random tuples than asked for
                 if len(random_dict_uri) == no_erroneous:
                     break
-    if len(random_dict_uri) == no_erroneous:
-        return random_dict_uri
-    else:
-        raise ValueError('Could not create the percentage of erroneous links that were asked !')
+    # if len(random_dict_uri) == no_erroneous:
+    #     return random_dict_uri
+    # else:
+    #     raise ValueError('Could not create the percentage of erroneous links that were asked !')
+    if len(random_dict_uri) != no_erroneous:
+        print("WARN: Could not create the percentage of erroneous links that were asked !")
+    return random_dict_uri
 
 
 def count_links(path_refalign):
@@ -214,4 +229,3 @@ if __name__ == '__main__':
     print("Expected erroneous links to be added:", count_links(refalign_path) * ratio)
     print("Number of links before injection:", count_links(refalign_path))
     print("Number of links after injection", count_links(output_path))
-

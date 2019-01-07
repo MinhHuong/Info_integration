@@ -2,6 +2,7 @@
 import rdflib as rdf
 from onto_graph import OntoGraph
 import injector as inj
+import utils as ut
 import time as tm
 
 
@@ -72,23 +73,17 @@ def invalidate_sameas(sameas, g1, g2):
         u1, u2 = link[0], link[1]
         common_props = get_common_prop(u1, u2, g1.graph, g2.graph)  # set of common properties of u1 and u2
         for p in common_props:
-            # if p is a functional property in both g1 and g2
             if p in g1.functional_properties and p in g2.functional_properties:
-                # o1 = list(g1.graph.objects(subject=u1, predicate=p))
                 o1 = list(g1.graph.objects(subject=rdf.URIRef(u1), predicate=p))
                 o2 = list(g2.graph.objects(subject=rdf.URIRef(u2), predicate=p))
                 if len(o1) == 1 and len(o2) == 1:  # reinforce the functionality property
-                    sim = jaro(o1[0], o2[0])
-                    if sim <= 0.7:
-                        # print("o1 =", o1[0])
-                        # print("o2 =", o2[0])
-                        # print("Similarity:", sim)
-                        # print()
-                        # tm.sleep(2)
+                    is_date = "date_of_birth" in p.toPython()
+                    if not ut.synval(o1[0], o2[0], is_date):
                         wrong_sameas.add(link)
                         break
 
     return wrong_sameas
+
 
 ############################
 # For testing purpose only #
