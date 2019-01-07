@@ -76,9 +76,7 @@ for i in range(1, num_input+1):
     assert int(G / V) == int(1 / (1 + ratio))
 
     # validate sameAs statements
-    # num_true, num_false = val.detect_false_sameas(to_validate, g_source, g_target)
-    wrong_sameas = val.invalidate_sameas(to_validate, g_source, g_target)
-    num_false = len(wrong_sameas)
+    num_true, num_false = val.detect_false_sameas(to_validate, g_source, g_target)
     accuracy = num_false / (V - G)
     print("Accuracy on %s: %f" % (folder, accuracy))
     print("Fraction of incorrect over all same-as:", num_false / V)
