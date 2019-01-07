@@ -40,4 +40,6 @@ to_validate = inj.extract_sameas(path_data + val_path)
 
 # validate sameAs statements
 print("Detecting false sameAs statements...")
-val.detect_false_sameas(to_validate, g_source, g_target)
+# val.detect_false_sameas(to_validate, g_source, g_target)
+wrong_sameas = val.invalidate_sameas(to_validate, g_source, g_target)
+print("Number of wrong same-as:", len(wrong_sameas))

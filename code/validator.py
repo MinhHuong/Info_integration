@@ -2,6 +2,7 @@
 import rdflib as rdf
 from onto_graph import OntoGraph
 import injector as inj
+import time as tm
 
 
 def detect_false_sameas(same_as, g1, g2):
@@ -9,12 +10,18 @@ def detect_false_sameas(same_as, g1, g2):
     Given some sameAs links, checks if U1 sameAs U2 and p is a common property of U1 and U2
     if p(U1, x) AND p(U2, y) and if x == y then the sameAs property is valid
     valid sameAs properties are added to a new dictionnary true_sameAs
+
+    :param same_as: a list of same-as links as tuple
+    :param g1:
+    :param g2:
+    :return:
     """
     true_sameAs = {}
     wrong_sameas_count = 0
 
     # for each sameAs statements
-    for U1, U2 in same_as.items():
+    for link in same_as:
+        U1, U2 = link[0], link[1]
         common_props = get_common_prop(U1, U2, g1.graph, g2.graph)  # All the common properties between U1 and U2
 
         FPcount = 0  # count the number of functional properties
@@ -49,6 +56,39 @@ def get_common_prop(U1, U2, G1, G2):
     pred_obj2 = set([p for p, o in list(G2.predicate_objects(rdf.URIRef(U2)))])
     return pred_obj1.intersection(pred_obj2)
 
+
+def invalidate_sameas(sameas, g1, g2):
+    """
+    Another version of code that invalidates erroneous sameAs links
+
+    :param sameas: a list of same-as links (as tuple) from which we should detect false sameAs
+    :param g1: graph 1
+    :param g2: graph 2
+    :return: list of false same-as links
+    """
+    wrong_sameas = set()
+
+    for link in sameas:
+        u1, u2 = link[0], link[1]
+        common_props = get_common_prop(u1, u2, g1.graph, g2.graph)  # set of common properties of u1 and u2
+        for p in common_props:
+            # if p is a functional property in both g1 and g2
+            if p in g1.functional_properties and p in g2.functional_properties:
+                # o1 = list(g1.graph.objects(subject=u1, predicate=p))
+                o1 = list(g1.graph.objects(subject=rdf.URIRef(u1), predicate=p))
+                o2 = list(g2.graph.objects(subject=rdf.URIRef(u2), predicate=p))
+                if len(o1) == 1 and len(o2) == 1:  # reinforce the functionality property
+                    sim = jaro(o1[0], o2[0])
+                    if sim <= 0.7:
+                        # print("o1 =", o1[0])
+                        # print("o2 =", o2[0])
+                        # print("Similarity:", sim)
+                        # print()
+                        # tm.sleep(2)
+                        wrong_sameas.add(link)
+                        break
+
+    return wrong_sameas
 
 ############################
 # For testing purpose only #

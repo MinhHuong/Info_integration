@@ -66,16 +66,19 @@ for i in range(1, num_input+1):
     # the set of sameAs links to validate
     val_path = path_data + folder + "err_refalign.rdf"
     to_validate = inj.extract_sameas(path_data + val_path)
-    V = inj.count_links(val_path)
+    V = len(to_validate)
 
     # we also want to keep track of the number of wrong sameAs being added in
     gold_path = path_data + folder + "refalign.rdf"
     G = inj.count_links(path_data + gold_path)
-    print("Golden standard:", G)
-    print("To validate:", V)
-    print("Ratio:", ratio)
+
+    # sanity check
     assert int(G / V) == int(1 / (1 + ratio))
 
     # validate sameAs statements
-    num_true, num_false = val.detect_false_sameas(to_validate, g_source, g_target)
-    print("%d wrong sameAs links detected over %d erroneous links" % (num_false, V-G))
+    # num_true, num_false = val.detect_false_sameas(to_validate, g_source, g_target)
+    wrong_sameas = val.invalidate_sameas(to_validate, g_source, g_target)
+    num_false = len(wrong_sameas)
+    accuracy = num_false / (V - G)
+    print("Accuracy on %s: %f" % (folder, accuracy))
+    print("Fraction of incorrect over all same-as:", num_false / V)

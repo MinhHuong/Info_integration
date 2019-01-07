@@ -16,15 +16,15 @@ def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign
     :return:                        None
     """
     # extract same-as statements from gold standard in refalign
-    same_as = extract_sameas(target_refalign_path)
-
+    same_as = sameas_dict_refalign(target_refalign_path)
 
     # compute the no_errors from percentage(ratio)
     no_error = int(len(same_as) * ratio)
-
     # get random URIs
-    random_dict_uri = random_uri(graph_source=source_graph.graph,graph_target=target_graph.graph,\
-     no_erroneous=no_error, dict_sameas=same_as)
+    random_dict_uri = random_uri(graph_source=source_graph.graph,
+                                 graph_target=target_graph.graph,
+                                 no_erroneous=no_error,
+                                 dict_sameas=same_as)
 
     # inject erroneous in target_graph
     inject(target_refalign_path, output_path, random_dict_uri)
@@ -81,7 +81,7 @@ def inject(input_path, output_path, random_dict_uri):
     text_file.close()
 
 
-def extract_sameas(path_refalign):
+def sameas_dict_refalign(path_refalign):
     """
     This method parses the refalign file with minidom parser for XML.
 
@@ -89,7 +89,7 @@ def extract_sameas(path_refalign):
     :return:                A dictionary that keeps correct SameAs Links
                             between the source & target ontology defined in refalign
     """
-    same_as = {}
+    sameAs = {}
     xmldoc = minidom.parse(path_refalign)
     entity1_onto_source = xmldoc.getElementsByTagName('entity1')
     entity2_onto_target = xmldoc.getElementsByTagName('entity2')
@@ -97,13 +97,35 @@ def extract_sameas(path_refalign):
     for i in range(len(entity1_onto_source)):
         key = entity1_onto_source[i].attributes['rdf:resource'].value
         value = entity2_onto_target[i].attributes['rdf:resource'].value
-        if key not in same_as:
-            same_as[key] = value
+        if key not in sameAs:
+            sameAs[key] = value
 
-    return same_as
+    return sameAs
 
 
-def random_uri(graph_source,graph_target, no_erroneous, dict_sameas):
+def extract_sameas(path_rdf):
+    '''
+    This method parses the rdf file with minidom parser for XML.
+    and saves each sameAs link (whether they are erronous or not) as a tuple in the sameAs list
+
+    :param path_rdf:        Path to the rdf file
+    :return:                A list of tuples that are deemed to be sameAs
+    '''
+
+    sameAs = []
+    ref_xml = minidom.parse(path_rdf)
+    uri_source = ref_xml.getElementsByTagName('entity1')
+    uri_target = ref_xml.getElementsByTagName('entity2')
+
+    for i in range(len(uri_source)):
+        x = uri_source[i].attributes['rdf:resource'].value
+        y = uri_target[i].attributes['rdf:resource'].value
+        sameAs.append((x , y))
+
+    return sameAs
+
+
+def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
     """
 
     :param graph_source:    the ontology graph_source
