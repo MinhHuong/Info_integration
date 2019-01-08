@@ -23,8 +23,8 @@ Required parameters:
 """
 
 # prompt for custom parameters, if not provided, take default values
-if len(sys.argv) < 5:
-    print("Syntax: python experiments.py from to threshold(float) ratio(float)")
+if len(sys.argv) < 6:
+    print("Syntax: python experiments.py from to threshold(float) ratio(float) depth[0, )")
     print("'from' and 'to' accept value in [1, 80]")
     print("Leave 'to' = -1 if you want to test in one folder only")
     sys.exit(0)
@@ -38,6 +38,7 @@ else:
     end_input = end if end != -1 else start_input
     threshold = float(sys.argv[3])
     ratio = float(sys.argv[4])
+    depth = int(sys.argv[5])
 
 # create the source ontology 000/onto.owl
 g_source = OntoGraph(path_data + source_path)
@@ -46,13 +47,14 @@ g_source.extract_func_properties(threshold=threshold)
 # csv file to store output
 fout = open(
     "../experiments/result"
-    + "_" + str(start_input) + "_" + str(end_input) + "_" + str(threshold) + "_" + str(ratio)
+    + "_" + str(start_input) + "_" + str(end_input) + "_" + str(threshold) + "_" + str(ratio) + "_" + str(depth)
     + ".csv",
     "w")
 fout.write("# start_input : " + sys.argv[1] + "\n")
 fout.write("# end_input : " + sys.argv[2] + "\n")
 fout.write("# threshold : " + sys.argv[3] + "\n")
 fout.write("# ratio : " + sys.argv[4] + "\n")
+fout.write("# depth :" + sys.argv[5] + "\n")
 fout.write("Folder,Precision,Recall,Time(s)" + "\n")
 
 for i in range(start_input, end_input+1):
@@ -90,7 +92,7 @@ for i in range(start_input, end_input+1):
     assert int(G / V) == int(1 / (1 + ratio))
 
     # validate the sameAs links
-    wrong_sameas = val.invalidate_sameas(val_set, g_source, g_target)
+    wrong_sameas = val.invalidate_sameas(val_set, g_source, g_target, depth)
     inters = ut.find_intersection(wrong_sameas, error_links)
     end_time = tm.time()
 

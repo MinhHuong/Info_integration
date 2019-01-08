@@ -1,5 +1,7 @@
 import editdistance as ed
 import dateutil.parser as dp
+import rdflib as rdf
+import time as tm
 
 
 def jaro(s, t):
@@ -105,7 +107,7 @@ def check_same_date(d1, d2):
     # return date1 == date2
 
 
-def synval(obj1, obj2, is_date=False):
+def synval(obj1, obj2, is_date=False, g1=None, g2=None, depth=1):
     """
     Evaluate the similarity/equality of two objects o1 and o2.
     - If o1 and o2 are strings, employ string matching similarity measures
@@ -139,7 +141,16 @@ def synval(obj1, obj2, is_date=False):
     # if they are both URI's
     # TODO check if they are really sameAs (recursive call to validator?...)
     if o1.startswith(URI_PREFIX) and o2.startswith(URI_PREFIX):
-        return True
+        # print("Have to validate URI's in object")
+        # print(o1)
+        # print(o2)
+        # result = validate_link(obj1, obj2, g1, g2)
+        # print("Result is:", result)
+        # tm.sleep(10)
+        if depth <= 0:
+            return True
+        return validate_link(obj1, obj2, g1, g2, depth-1)
+        # return True
 
     # if both are strings
     if not o1.startswith(URI_PREFIX) and not o2.startswith(URI_PREFIX):
@@ -180,3 +191,37 @@ def find_intersection(s1, s2):
                 result.add(link)
 
     return result
+
+
+def validate_link(u1, u2, g1, g2, depth=1):
+    """
+    Validates a sameAs links
+
+    :param u1: URIRef object
+    :param u2: URIRef object
+    :param g1: graph containing u1
+    :param g2: graph containing u2
+    :return: False if the link is definitely false, otherwise True
+    (returning True doesn't think this link is absolutely True,
+    it simply means we cannot conclude otherwise)
+    """
+    common_props = get_common_prop(u1, u2, g1.graph, g2.graph)  # set of common properties of u1 and u2
+    for p in common_props:
+        if p in g1.functional_properties and p in g2.functional_properties:
+            o1 = list(g1.graph.objects(subject=rdf.URIRef(u1), predicate=p))
+            o2 = list(g2.graph.objects(subject=rdf.URIRef(u2), predicate=p))
+            if len(o1) == 1 and len(o2) == 1:  # reinforce the functionality property
+                is_date = "date_of_birth" in p.toPython()
+                if not synval(o1[0], o2[0], is_date, g1, g2, depth=depth):
+                    return False
+    return True
+
+
+def get_common_prop(U1, U2, G1, G2):
+    """
+    This function gets the common properties between 2 URIs subjects in 2 different ontologies
+    return the rdf property
+    """
+    pred_obj1 = set([p for p, o in list(G1.predicate_objects(rdf.URIRef(U1)))])
+    pred_obj2 = set([p for p, o in list(G2.predicate_objects(rdf.URIRef(U2)))])
+    return pred_obj1.intersection(pred_obj2)

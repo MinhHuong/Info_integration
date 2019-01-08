@@ -3,6 +3,7 @@ import random
 import sys as sys
 from onto_graph import OntoGraph
 
+random.seed(420)
 
 def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign_path, ratio):
     """

@@ -23,7 +23,7 @@ def detect_false_sameas(same_as, g1, g2):
     # for each sameAs statements
     for link in same_as:
         U1, U2 = link[0], link[1]
-        common_props = get_common_prop(U1, U2, g1.graph, g2.graph)  # All the common properties between U1 and U2
+        common_props = ut.get_common_prop(U1, U2, g1.graph, g2.graph)  # All the common properties between U1 and U2
 
         FPcount = 0  # count the number of functional properties
         SameFPcount = 0  # count the number of functional properties with x == y
@@ -48,39 +48,22 @@ def detect_false_sameas(same_as, g1, g2):
     return (len(true_sameAs), wrong_sameas_count)
 
 
-def get_common_prop(U1, U2, G1, G2):
-    """
-    This function gets the common properties between 2 URIs subjects in 2 different ontologies
-    return the rdf property
-    """
-    pred_obj1 = set([p for p, o in list(G1.predicate_objects(rdf.URIRef(U1)))])
-    pred_obj2 = set([p for p, o in list(G2.predicate_objects(rdf.URIRef(U2)))])
-    return pred_obj1.intersection(pred_obj2)
-
-
-def invalidate_sameas(sameas, g1, g2):
+def invalidate_sameas(sameas, g1, g2, depth):
     """
     Another version of code that invalidates erroneous sameAs links
 
     :param sameas: a list of same-as links (as tuple) from which we should detect false sameAs
     :param g1: graph 1
     :param g2: graph 2
+    :param depth: depth i.e. number of times we want to go deep into validating the similarity of URI's
     :return: list of false same-as links
     """
     wrong_sameas = set()
 
     for link in sameas:
         u1, u2 = link[0], link[1]
-        common_props = get_common_prop(u1, u2, g1.graph, g2.graph)  # set of common properties of u1 and u2
-        for p in common_props:
-            if p in g1.functional_properties and p in g2.functional_properties:
-                o1 = list(g1.graph.objects(subject=rdf.URIRef(u1), predicate=p))
-                o2 = list(g2.graph.objects(subject=rdf.URIRef(u2), predicate=p))
-                if len(o1) == 1 and len(o2) == 1:  # reinforce the functionality property
-                    is_date = "date_of_birth" in p.toPython()
-                    if not ut.synval(o1[0], o2[0], is_date):
-                        wrong_sameas.add(link)
-                        break
+        if not ut.validate_link(u1, u2, g1, g2, depth=depth):
+            wrong_sameas.add(link)
 
     return wrong_sameas
 
