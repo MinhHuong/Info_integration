@@ -10,7 +10,7 @@ path_data = "../data/"
 # the main pipeline does not concern with manual injection of erroneous links
 
 # prompt for custom parameters, if not provided, take default values
-# syntax: 'python pipeline.py <source_graph> <target_graph> <to_validate> <threshold>'
+# syntax: 'python pipeline.py <source_graph> <target_graph> <to_validate> <threshold> <depth>'
 if len(sys.argv) < 5:
     print("Default values will be used.")
     source_path = path_data + "000/onto.owl"

@@ -46,8 +46,12 @@ g_source.extract_func_properties(threshold=threshold)
 
 # csv file to store output
 fout = open(
-    "../experiments/result"
-    + "_" + str(start_input) + "_" + str(end_input) + "_" + str(threshold) + "_" + str(ratio) + "_" + str(depth)
+    "../experiments/recent/depth/random_result"
+    + "_" + str(start_input)
+    + "_" + str(end_input)
+    + "_" + str(threshold)
+    + "_" + str(ratio)
+    + "_" + str(depth)
     + ".csv",
     "w")
 fout.write("# start_input : " + sys.argv[1] + "\n")
