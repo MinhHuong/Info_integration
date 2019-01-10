@@ -1,26 +1,27 @@
-# a real pipeline
-import sys as sys
-import validator as val
-import injector as inj
-from onto_graph import OntoGraph
-import utils as ut
-import time as tm
-
-
-path_data = "../data/"
-source_path = path_data + "000/onto.owl"  # fixed source path 000/onto.owl
-
-"""
-Run experiments through all steps
+""" experiments.py: Run experiments through all steps
     (1) inject a fraction of wrong sameAs links in
     (2) validate the erroneous files --> result: #wrong sameAs found/#sameAs added
     (3) compute the avg over all 80 input folders
     
 Required parameters:
-    - num_input:    number of input folders to work on (from 1 to 80 inclusively)
+    - from:         from folder
+    - to:           to folder (-1 if testing in one folder from only)
     - threshold:    to compute the degree functionality of a property
     - ratio:        fraction of manually added erroneous sameAs (as an integer)
+    - depth:        depth of the URIs subvalidation
 """
+
+import sys as sys
+import time as tm
+import validator as val
+import injector as inj
+from onto_graph import OntoGraph
+import utils as ut
+
+path_data = "../data/"
+source_path = path_data + "000/onto.owl"  # fixed source path 000/onto.owl
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
 
 # prompt for custom parameters, if not provided, take default values
 if len(sys.argv) < 6:
@@ -80,8 +81,8 @@ for i in range(start_input, end_input+1):
     # inject erroneous sameAs in all input folder then do validation
     # print("Injecting erroneous sameAs links in " + val_path + "\n")
     error_links = inj.create_wrong_sameas(target_graph=g_target, source_graph=g_source,
-                            output_path=val_path, target_refalign_path=refalign_path,
-                            ratio=ratio)
+                                          output_path=val_path, target_refalign_path=refalign_path,
+                                          ratio=ratio)
 
     # set to validate after injection
     # print("Validating all the sameAs links in " + val_path + "\n")

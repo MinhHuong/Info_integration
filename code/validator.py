@@ -1,10 +1,8 @@
-# some header here
-import rdflib as rdf
-from onto_graph import OntoGraph
-import injector as inj
+"""validator.py: Validates the set of same-as links"""
+
 import utils as ut
-import time as tm
-import random as rd
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
 
 
 def invalidate_sameas(sameas, g1, g2, depth):
@@ -21,12 +19,13 @@ def invalidate_sameas(sameas, g1, g2, depth):
 
     for link in sameas:
         u1, u2 = link[0], link[1]
-        p = rd.random()
-        if p >= 0.5:
-            wrong_sameas.add(link)
 
-        # if not ut.validate_link(u1, u2, g1, g2, depth=depth):
+        # just a random classifier
+        # p = rd.random()
+        # if p >= 0.5:
         #     wrong_sameas.add(link)
 
-    return wrong_sameas
+        if not ut.validate_link(u1, u2, g1, g2, depth=depth):
+            wrong_sameas.add(link)
 
+    return wrong_sameas

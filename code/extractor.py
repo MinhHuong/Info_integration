@@ -1,3 +1,8 @@
+""" extractor.py: Extracts functional property from a graph based on a given threshold"""
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
+
+
 def count_predicate_occurrences(candidates, predicates_objects):
     """
     Count the number of times a predicate p is associated to a given subject s e.g.
@@ -71,24 +76,18 @@ def filter_functional_properties(candidates, threshold):
     return result
 
 
-def extract_properties(graph, threshold, verbose=0):
+def extract_properties(graph, threshold):
     candidates = {}
 
     for s in graph.subjects():
         # count the number of occurrences of each predicate p of s
         predicates_occurrences = count_predicate_occurrences(candidates, graph.predicate_objects(s))
-        if verbose == 1:
-            print(candidates)
 
         # for those predicates that appear only ONCE, update the functionality count
         update_candidates(candidates, predicates_occurrences)
 
-    # having the count of each predicate i.e. the number of times it associates one input to only one output
-    # compute the degree of functionality (a percentage?)
+    # compute the degree of functionality and filter away those that are below the threshold
     functional_properties = filter_functional_properties(candidates, threshold)
-
-    if verbose == 2:
-        print('Functional properties: ', functional_properties)
 
     # return the set of functional properties
     return functional_properties

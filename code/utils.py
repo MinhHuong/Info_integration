@@ -1,7 +1,10 @@
+"""utils.py: utility methods, mostly used to verify the similarity of two arbitrary objects/strings"""
+
 import editdistance as ed
 import dateutil.parser as dp
 import rdflib as rdf
-import time as tm
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
 
 
 def jaro(s, t):
@@ -69,11 +72,11 @@ def compute_string_similarity(s1, s2):
     :return: similarity measure of s1 and s2 (float in [0., 1.])
     """
 
-    LENGTH_THRESHOLD = 20
-    LENTH_RATIO_THRESHOLD = 2
+    lenght_threshold = 20
+    length_ratio_threshold = 2
 
     # if s1 or s2 is too long (> 20 characters), return 1 (ignore non-sense text)
-    if len(s1) >= LENGTH_THRESHOLD or len(s2) >= LENGTH_THRESHOLD:
+    if len(s1) >= lenght_threshold or len(s2) >= lenght_threshold:
         return 1
 
     # if s1 or s2 is empty, return 0
@@ -81,11 +84,11 @@ def compute_string_similarity(s1, s2):
         return 0
 
     # if one string is too long wrt the other, return 1 (ratio = 2)
-    if (len(s1) > len(s2) and len(s1) / len(s2) >= LENTH_RATIO_THRESHOLD) \
-            or (len(s2) > len(s1) and len(s2) / len(s1) >= LENTH_RATIO_THRESHOLD):
+    if (len(s1) > len(s2) and len(s1) / len(s2) >= length_ratio_threshold) \
+            or (len(s2) > len(s1) and len(s2) / len(s1) >= length_ratio_threshold):
         return 0
 
-    # sim = ed.eval(s1, s2)  # uncomment to use Levenshtein
+    # sim = ed.eval(s1, s2) / max(len(s1), len(s2))  # uncomment to use Levenshtein
     sim = jaro(s1, s2)
 
     return sim
@@ -104,8 +107,6 @@ def check_same_date(d1, d2):
     # maybe only compare day and month, disregard year
     return date1.day == date2.day and date1.month == date2.month
 
-    # return date1 == date2
-
 
 def synval(obj1, obj2, is_date=False, g1=None, g2=None, depth=1):
     """
@@ -116,15 +117,18 @@ def synval(obj1, obj2, is_date=False, g1=None, g2=None, depth=1):
     if they both refer to the same date (but in different formats)
     - If o1 and o2 are URI's, evaluate if they can be sameAs in some sense (pretty tough)
 
-    :param obj1: an object o1
-    :param obj2: an object o2
+    :param obj1:    an object 1
+    :param obj2:    an object 2
     :param is_date: if both are a date
+    :param g1:      the graph containing object 1
+    :param g2:      the graph containing object 2
+    :param depth:   the depth of URIs sub-validation
     :return: True if they are similar, False otherwise
     """
 
     # constants
-    URI_PREFIX = "http"  # URI prefix
-    SIM_THRESHOLD = 0.75
+    uri_prefix = "http"  # URI prefix
+    sim_threshold = 0.75
 
     # string value of the objects
     o1, o2 = obj1.toPython(), obj2.toPython()
@@ -140,20 +144,14 @@ def synval(obj1, obj2, is_date=False, g1=None, g2=None, depth=1):
 
     # if they are both URI's
     # TODO check if they are really sameAs (recursive call to validator?...)
-    if o1.startswith(URI_PREFIX) and o2.startswith(URI_PREFIX):
-        # print("Have to validate URI's in object")
-        # print(o1)
-        # print(o2)
-        # result = validate_link(obj1, obj2, g1, g2)
-        # print("Result is:", result)
-        # tm.sleep(10)
+    if o1.startswith(uri_prefix) and o2.startswith(uri_prefix):
         if depth <= 0:
             return True
         return validate_link(obj1, obj2, g1, g2, depth-1)
         # return True
 
     # if both are strings
-    if not o1.startswith(URI_PREFIX) and not o2.startswith(URI_PREFIX):
+    if not o1.startswith(uri_prefix) and not o2.startswith(uri_prefix):
         if is_date:  # if o1 and o2 are dates
             return check_same_date(o1, o2)
         else:  # else, compute string similarity
@@ -164,7 +162,7 @@ def synval(obj1, obj2, is_date=False, g1=None, g2=None, depth=1):
 
             # otherwise, do thing transparently
             sim = compute_string_similarity(o1, o2)
-            return sim >= SIM_THRESHOLD
+            return sim >= sim_threshold
 
     # if one is an URI and the other is not, return True
     # TODO this is actually naive, they can still refer to the same object
@@ -197,14 +195,16 @@ def validate_link(u1, u2, g1, g2, depth=1):
     """
     Validates a sameAs links
 
-    :param u1: URIRef object
-    :param u2: URIRef object
-    :param g1: graph containing u1
-    :param g2: graph containing u2
-    :return: False if the link is definitely false, otherwise True
-    (returning True doesn't think this link is absolutely True,
-    it simply means we cannot conclude otherwise)
+    :param u1:      URIRef object
+    :param u2:      URIRef object
+    :param g1:      graph containing u1
+    :param g2:      graph containing u2
+    :param depth:   depth of URIs sub-validatiom
+    :return:        False if the link is definitely false, otherwise True
+                    (returning True doesn't think this link is absolutely True,
+                    it simply means we cannot conclude otherwise)
     """
+
     common_props = get_common_prop(u1, u2, g1.graph, g2.graph)  # set of common properties of u1 and u2
     for p in common_props:
         if p in g1.functional_properties and p in g2.functional_properties:

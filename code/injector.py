@@ -1,9 +1,17 @@
+"""injector.py: Injects random same-as links to a file
+
+If using with pipeline.py and not experiments.py, this injector should be called first
+"""
+
 from xml.dom import minidom
 import random
 import sys as sys
 from onto_graph import OntoGraph
 
-random.seed(420)
+random.seed(420)  # fix the random state
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
+
 
 def create_wrong_sameas(target_graph, source_graph, output_path, target_refalign_path, ratio):
     """
@@ -39,11 +47,10 @@ def inject(input_path, output_path, random_dict_uri):
     We use minidom to parse refalign and to inject erroneous sameAs links.
     The erroneous sameAs links will be saved in output_path
 
-    :param input_path:  path to refalign
-    :param output_path: path to save refalign with injected errors
-    :param source:      a list containing random subjects from source ontology (000)
-    :param target:      a list containing random subjects from target ontology (001/ 002)
-    :return:            a set of erroneous sameAs links (as tuple)
+    :param input_path:          path to refalign
+    :param output_path:         path to save refalign with injected errors
+    :param random_dict_uri:     dictionary of pairs of random URIs
+    :return:                    a set of erroneous sameAs links (as tuple)
     """
 
     size = len(random_dict_uri)
@@ -62,11 +69,11 @@ def inject(input_path, output_path, random_dict_uri):
         data.appendChild(cell)
 
         cons = doc.createElement('entity1')
-        cons.setAttribute('rdf:resource', entity1) # random choice from source onto
+        cons.setAttribute('rdf:resource', entity1)  # random choice from source onto
         cell.appendChild(cons)
 
         cons = doc.createElement('entity2')
-        cons.setAttribute('rdf:resource', entity2) #random choice from target onto
+        cons.setAttribute('rdf:resource', entity2)  # random choice from target onto
         cell.appendChild(cons)
 
         relation = doc.createElement('relation')
@@ -102,7 +109,7 @@ def sameas_dict_refalign(path_refalign):
     :return:                A dictionary that keeps correct SameAs Links
                             between the source & target ontology defined in refalign
     """
-    sameAs = {}
+    same_as = {}
     xmldoc = minidom.parse(path_refalign)
     entity1_onto_source = xmldoc.getElementsByTagName('entity1')
     entity2_onto_target = xmldoc.getElementsByTagName('entity2')
@@ -110,22 +117,22 @@ def sameas_dict_refalign(path_refalign):
     for i in range(len(entity1_onto_source)):
         key = entity1_onto_source[i].attributes['rdf:resource'].value
         value = entity2_onto_target[i].attributes['rdf:resource'].value
-        if key not in sameAs:
-            sameAs[key] = value
+        if key not in same_as:
+            same_as[key] = value
 
-    return sameAs
+    return same_as
 
 
 def extract_sameas(path_rdf):
-    '''
+    """
     This method parses the rdf file with minidom parser for XML.
     and saves each sameAs link (whether they are erronous or not) as a tuple in the sameAs list
 
-    :param path_rdf:        Path to the rdf file
-    :return:                A list of tuples that are deemed to be sameAs
-    '''
+    :param path_rdf:    Path to the rdf file
+    :return:            A list of tuples that are deemed to be sameAs
+    """
 
-    sameAs = []
+    same_as = []
     ref_xml = minidom.parse(path_rdf)
     uri_source = ref_xml.getElementsByTagName('entity1')
     uri_target = ref_xml.getElementsByTagName('entity2')
@@ -133,9 +140,9 @@ def extract_sameas(path_rdf):
     for i in range(len(uri_source)):
         x = uri_source[i].attributes['rdf:resource'].value
         y = uri_target[i].attributes['rdf:resource'].value
-        sameAs.append((x , y))
+        same_as.append((x, y))
 
-    return sameAs
+    return same_as
 
 
 def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
@@ -157,8 +164,8 @@ def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
     sameAs dictionary and (no_erroneous) target uri not existing as value of sameAs dict
     '''
 
-    for uri_source , uri_target in zip(sorted(graph_source.subject_objects(), key=lambda k: random.random()) ,
-        sorted(graph_target.subject_objects(), key=lambda k: random.random())):
+    for uri_source, uri_target in zip(sorted(graph_source.subject_objects(), key=lambda k: random.random()),
+                                      sorted(graph_target.subject_objects(), key=lambda k: random.random())):
         # Only take those "uri"s that are of type URIRef. (didn't make sense for string values)
         if 'URIRef' in str(type(uri_source[1])) and 'URIRef' in str(type(uri_target[1])):
             if 'URIRef' in str(type(uri_source[0])) and 'URIRef' in str(type(uri_target[0])):
@@ -174,10 +181,12 @@ def random_uri(graph_source, graph_target, no_erroneous, dict_sameas):
                 # create no more random tuples than asked for
                 if len(random_dict_uri) == no_erroneous:
                     break
+
     # if len(random_dict_uri) == no_erroneous:
     #     return random_dict_uri
     # else:
     #     raise ValueError('Could not create the percentage of erroneous links that were asked !')
+
     if len(random_dict_uri) != no_erroneous:
         print("WARN: Could not create the percentage of erroneous links that were asked !")
     return random_dict_uri
@@ -195,9 +204,9 @@ def count_links(path_refalign):
     return len(xmldoc.getElementsByTagName('entity1'))
 
 
-############################
-# For testing purpose only #
-############################
+########################
+# Run the inject links #
+########################
 if __name__ == '__main__':
     print('Running the injector...')
 
