@@ -1,0 +1,1 @@
+FOR %%I IN (0 2 4 6 8 10 12 14 16 18 20) DO START /WAIT python experiments.py 1 80 0.8 0.5 %%I
