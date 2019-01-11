@@ -1,7 +1,12 @@
+"""plotting.py: plots the evaluation result"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+
+__authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
+
 
 def gen_filename(setting, param, is_random):
     # syntax: "../experiments/recent/[random]_result_[thres]_[ratio]_[depth].csv"
@@ -90,11 +95,10 @@ for t in x_range:
     ps_by_measure[i] = p_i
     rs_by_measure[i] = r_i
     f1_by_measure[i] = 2 * p_i * r_i / (p_i + r_i)
-    time_by_measure[i] = np.max(times)
+    time_by_measure[i] = np.mean(times)
 
     zeros_ratio[i] = np.sum([1 for p, r in zip(ps, rs) if p == 0 and r == 0]) / 80
     zeros_data.append([f for p, r, f in zip(ps, rs, folders) if p == 0 and r == 0])
-
 
     # random result
     result_random = pd.read_csv(gen_filename(setting, param, True), sep=",", skiprows=5)
@@ -114,7 +118,6 @@ for t in x_range:
     i += 1
 
 # plot by precision/recall/time by x_range
-# plt.figure()
 fig, ax1 = plt.subplots(figsize=(7, 6))
 
 ax1.plot(x_range, ps_by_measure, label="Precision", color="#1f77b4", marker="^")

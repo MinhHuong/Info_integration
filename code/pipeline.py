@@ -1,7 +1,6 @@
 """ pipeline.py: Runs the validator on a file containing correct and incorrect same-as links
 
-The injection is done separately
-The main pipeline does not concern with manual injection of erroneous links
+This file is for test purpose only.
 """
 
 import sys as sys
@@ -10,6 +9,7 @@ from onto_graph import OntoGraph
 import injector as inj
 
 __authors__ = "Billel Guerfa, Armita Khajehnassiri, Minh-Huong Le-Nguyen, Nafaa Si Said"
+
 
 # prompt for custom parameters, if not provided, take default values
 # syntax: 'python pipeline.py <source_graph> <target_graph> <to_validate> <threshold> <depth>'

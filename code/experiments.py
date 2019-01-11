@@ -46,22 +46,23 @@ else:
 g_source = OntoGraph(path_data + source_path)
 g_source.extract_func_properties(threshold=threshold)
 
+## (uncomment if you want to write the evaluation to a file)
 # csv file to store output
-fout = open(
-    "../experiments/recent/depth/random_result"
-    + "_" + str(start_input)
-    + "_" + str(end_input)
-    + "_" + str(threshold)
-    + "_" + str(ratio)
-    + "_" + str(depth)
-    + ".csv",
-    "w")
-fout.write("# start_input : " + sys.argv[1] + "\n")
-fout.write("# end_input : " + sys.argv[2] + "\n")
-fout.write("# threshold : " + sys.argv[3] + "\n")
-fout.write("# ratio : " + sys.argv[4] + "\n")
-fout.write("# depth :" + sys.argv[5] + "\n")
-fout.write("Folder,Precision,Recall,Time(s)" + "\n")
+# fout = open(
+#     "../experiments/recent/depth/random_result"
+#     + "_" + str(start_input)
+#     + "_" + str(end_input)
+#     + "_" + str(threshold)
+#     + "_" + str(ratio)
+#     + "_" + str(depth)
+#     + ".csv",
+#     "w")
+# fout.write("# start_input : " + sys.argv[1] + "\n")
+# fout.write("# end_input : " + sys.argv[2] + "\n")
+# fout.write("# threshold : " + sys.argv[3] + "\n")
+# fout.write("# ratio : " + sys.argv[4] + "\n")
+# fout.write("# depth :" + sys.argv[5] + "\n")
+# fout.write("Folder,Precision,Recall,Time(s)" + "\n")
 
 for i in range(start_input, end_input+1):
     # setup the input data
@@ -75,18 +76,18 @@ for i in range(start_input, end_input+1):
     start_time = tm.time()
 
     # create the target graph & extract functional properties
-    # print("Extracting functional properites in " + target_path + "\n")
+    print("Extracting functional properties in " + target_path)
     g_target = OntoGraph(target_path)
     g_target.extract_func_properties(threshold=threshold)
 
     # inject erroneous sameAs in all input folder then do validation
-    # print("Injecting erroneous sameAs links in " + val_path + "\n")
+    print("Injecting erroneous sameAs links in " + val_path)
     error_links = inj.create_wrong_sameas(target_graph=g_target, source_graph=g_source,
                                           output_path=val_path, target_refalign_path=refalign_path,
                                           ratio=ratio)
 
     # set to validate after injection
-    # print("Validating all the sameAs links in " + val_path + "\n")
+    print("Validating all the sameAs links in " + val_path)
     val_set = inj.extract_sameas(val_path)
     V = len(val_set)
 
@@ -111,12 +112,13 @@ for i in range(start_input, end_input+1):
     recall = len(inters) / len(wrong_sameas) if len(wrong_sameas) != 0 else 0
     time = end_time - start_time
 
+    print("------------------------")
     print("Precision:\t", precision)
     print("Recall:\t\t", recall)
     print("Running time:\t %f s" % time)
-    print()
+    print("\n\n")
 
     # write the result in a csv file
-    fout.write(folder[:-1] + "," + str(precision) + "," + str(recall) + "," + str(time) + "\n")
+    # fout.write(folder[:-1] + "," + str(precision) + "," + str(recall) + "," + str(time) + "\n")
 
-fout.close()
+# fout.close()

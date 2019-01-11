@@ -77,6 +77,13 @@ def filter_functional_properties(candidates, threshold):
 
 
 def extract_properties(graph, threshold):
+    """
+    Extracts functional properties using the given functionality threshold
+
+    :param graph:       the ontology graph
+    :param threshold:   the functionality threshold
+    :return:            a set of properties whose functionality degree >= threshold
+    """
     candidates = {}
 
     for s in graph.subjects():
